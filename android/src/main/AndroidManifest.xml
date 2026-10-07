@@ -1,2 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Normal (install-time) permissions. No runtime prompt is shown. -->
+  <!-- Read the active network's type and capabilities. -->
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <!-- Send the HTTPS probe to the endpoint the app configures. -->
+  <uses-permission android:name="android.permission.INTERNET" />
 </manifest>
