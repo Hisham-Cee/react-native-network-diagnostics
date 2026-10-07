@@ -108,3 +108,21 @@ public enum EndpointValidator {
     return url
   }
 }
+
+/// Thread-safe "first caller wins" flag, used to settle a promise exactly once
+/// when a result and a timeout race.
+public final class OnceFlag {
+  private let lock = NSLock()
+  private var claimed = false
+
+  public init() {}
+
+  /// Returns true for the first caller only.
+  public func claim() -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    if claimed { return false }
+    claimed = true
+    return true
+  }
+}

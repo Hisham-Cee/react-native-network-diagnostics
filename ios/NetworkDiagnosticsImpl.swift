@@ -27,12 +27,13 @@ public final class NetworkDiagnosticsImpl: NSObject {
   ) {
     let oneShot = NWPathMonitor()
     let stateQueue = DispatchQueue(label: "networkdiagnostics.state")
-    var finished = false
+    // A reference type instead of a captured `var`: Dispatch and Network
+    // closures are @Sendable in current SDKs, where mutating a captured local
+    // variable does not compile.
+    let once = OnceFlag()
 
     oneShot.pathUpdateHandler = { path in
-      // Runs on stateQueue.
-      guard !finished else { return }
-      finished = true
+      guard once.claim() else { return }
       oneShot.pathUpdateHandler = nil  // break the monitor <-> closure cycle
       oneShot.cancel()
       resolve(NetworkStateMapper.map(Self.snapshot(of: path)).toDictionary())
@@ -40,8 +41,7 @@ public final class NetworkDiagnosticsImpl: NSObject {
     oneShot.start(queue: stateQueue)
 
     stateQueue.asyncAfter(deadline: .now() + Self.stateTimeout) {
-      guard !finished else { return }
-      finished = true
+      guard once.claim() else { return }
       oneShot.pathUpdateHandler = nil
       oneShot.cancel()
       reject(ProbeErrorMapper.diagnosticUnavailable, "NWPathMonitor did not report a path")

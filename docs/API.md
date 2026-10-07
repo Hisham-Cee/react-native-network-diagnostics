@@ -80,8 +80,10 @@ function addNetworkStateListener(
 
 Calls `listener` when the OS reports a change in any exposed value. Passive: no network
 traffic. Returns an unsubscribe function (safe to call more than once). Native monitoring
-runs only while at least one listener is registered. The listener may receive the
-current state shortly after subscribing (Android reports it on registration).
+runs only while at least one listener is registered. The first listener usually receives
+the current state shortly after subscribing, because both Android
+(`registerDefaultNetworkCallback`) and iOS (`NWPathMonitor`) report it on start; later
+listeners added while monitoring is running do not get that initial event.
 
 ```ts
 const unsubscribe = addNetworkStateListener((state) => {
@@ -199,7 +201,7 @@ interface LatencyMetrics {
 | `TLS_FAILURE`            | TLS handshake failed                                      | Untrusted/expired certificate, captive portal intercepting HTTPS, TLS-inspecting proxy |
 | `INVALID_ENDPOINT`       | Not an absolute `https://` URL with a host                | Configuration error                                                                    |
 | `INVALID_OPTIONS`        | Option out of range or wrong type (rejects)               | Programmer error                                                                       |
-| `DIAGNOSTIC_UNAVAILABLE` | Native module missing or OS service unavailable (rejects) | Not rebuilt after install, Expo Go, web                                                |
+| `DIAGNOSTIC_UNAVAILABLE` | Native module missing or OS service unavailable (rejects) | Not rebuilt after install, Expo Go                                                     |
 | `UNKNOWN`                | Anything else                                             |                                                                                        |
 
 `error.message` is a human-readable native description for logs. Its wording is not part

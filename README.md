@@ -6,9 +6,10 @@ whether a captive portal is in the way, whether the network is metered or in Low
 Mode, and how long DNS, TCP, TLS and a full HTTPS request to **your own backend** take,
 with failures normalized into clear error codes.
 
-> **Status: experimental (0.1.x).** The API may change in minor versions. Native code has
-> been unit-tested at the logic level but has not yet been verified on physical devices;
-> see [Testing](#testing).
+> **Status: experimental (0.1.x).** The API may change in minor versions. Android has been
+> built and smoke-tested on one physical device (Wi-Fi diagnostics and monitoring) with
+> React Native 0.86.2. **iOS has not been compiled or run yet.** See
+> [docs/FINAL_IMPLEMENTATION_AUDIT.md](docs/FINAL_IMPLEMENTATION_AUDIT.md).
 
 ## Why this package exists
 
@@ -42,17 +43,17 @@ iOS:
 cd ios && pod install
 ```
 
-Then rebuild the app. Expo: works in a [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-(`npx expo prebuild` / `expo run:*`), not in Expo Go.
+Then rebuild the app. Expo: requires a [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+(`npx expo prebuild` / `expo run:*`); it cannot work in Expo Go. Expo has not been tested.
 
 ## Requirements
 
-|              | Minimum                                                                       |
-| ------------ | ----------------------------------------------------------------------------- |
-| React Native | 0.80, **New Architecture enabled** (default since 0.76, mandatory since 0.82) |
-| iOS          | React Native's minimum (15.1)                                                 |
-| Android      | API 24 (React Native's minimum)                                               |
-| Web          | Not supported (calls reject with `DIAGNOSTIC_UNAVAILABLE`)                    |
+|              | Minimum                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------ |
+| React Native | 0.80, **New Architecture enabled** (default since 0.76, mandatory since 0.82). Only 0.86.2 has been tested.  |
+| iOS          | React Native's minimum (15.1)                                                                                |
+| Android      | API 24 (React Native's minimum)                                                                              |
+| Web          | Not supported. react-native-web has no `TurboModuleRegistry`, so importing the package in a web build fails. |
 
 No runtime permission prompts. Android uses the install-time `ACCESS_NETWORK_STATE` and
 `INTERNET` permissions, which the library declares. iOS needs none.
@@ -236,7 +237,7 @@ Details: [docs/PLATFORM_DIFFERENCES.md](docs/PLATFORM_DIFFERENCES.md).
   within `timeoutMs` and the result is ignored.
 - Only `https://` endpoints. Plain HTTP is rejected.
 - Requires the New Architecture and React Native 0.80+.
-- Physical device behavior is not yet verified; see the manual test matrix.
+- Only Android Wi-Fi diagnostics and monitoring have been checked on a device; iOS is unverified. See the manual test matrix.
 
 ## Privacy
 

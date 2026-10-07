@@ -87,3 +87,6 @@ nitrogen/
 
 # Jest coverage
 coverage/
+
+# Kotlin compiler cache (Kotlin 2.x)
+.kotlin/

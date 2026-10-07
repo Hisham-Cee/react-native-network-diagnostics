@@ -72,3 +72,36 @@ final class EndpointValidatorTests: XCTestCase {
     XCTAssertNil(EndpointValidator.validate(""))
   }
 }
+
+final class OnceFlagTests: XCTestCase {
+  func testOnlyFirstClaimSucceeds() {
+    let flag = OnceFlag()
+    XCTAssertTrue(flag.claim())
+    XCTAssertFalse(flag.claim())
+    XCTAssertFalse(flag.claim())
+  }
+
+  func testConcurrentClaimsYieldExactlyOneWinner() {
+    let flag = OnceFlag()
+    let winners = Counter()
+    DispatchQueue.concurrentPerform(iterations: 200) { _ in
+      if flag.claim() { winners.increment() }
+    }
+    XCTAssertEqual(winners.value, 1)
+  }
+}
+
+private final class Counter {
+  private let lock = NSLock()
+  private var count = 0
+  var value: Int {
+    lock.lock()
+    defer { lock.unlock() }
+    return count
+  }
+  func increment() {
+    lock.lock()
+    count += 1
+    lock.unlock()
+  }
+}
