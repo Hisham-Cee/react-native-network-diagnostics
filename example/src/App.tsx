@@ -61,6 +61,7 @@ export default function App() {
 
   return (
     <ScrollView
+      style={styles.screen}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
@@ -75,6 +76,7 @@ export default function App() {
         onChangeText={setEndpointInput}
         onSubmitEditing={() => applyEndpoint(endpointInput)}
         placeholder="https://api.example.com/health"
+        placeholderTextColor="#999"
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
@@ -216,10 +218,14 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  // Explicit light background: the phone's dark theme otherwise paints the
+  // window dark behind the default dark text.
+  screen: { flex: 1, backgroundColor: '#fff' },
   container: { padding: 20, paddingTop: 64 },
   title: { fontSize: 24, fontWeight: '700', marginBottom: 16 },
   label: { fontSize: 13, color: '#555', marginBottom: 4 },
   input: {
+    color: '#111',
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 6,
