@@ -19,6 +19,7 @@
     "ios",
     "*.podspec",
     "react-native.config.js",
+    "CHANGELOG.md",
     "!ios/build",
     "!android/build",
     "!android/gradle",

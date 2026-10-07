@@ -33,6 +33,7 @@ public final class NetworkDiagnosticsImpl: NSObject {
       // Runs on stateQueue.
       guard !finished else { return }
       finished = true
+      oneShot.pathUpdateHandler = nil  // break the monitor <-> closure cycle
       oneShot.cancel()
       resolve(NetworkStateMapper.map(Self.snapshot(of: path)).toDictionary())
     }
@@ -41,6 +42,7 @@ public final class NetworkDiagnosticsImpl: NSObject {
     stateQueue.asyncAfter(deadline: .now() + Self.stateTimeout) {
       guard !finished else { return }
       finished = true
+      oneShot.pathUpdateHandler = nil
       oneShot.cancel()
       reject(ProbeErrorMapper.diagnosticUnavailable, "NWPathMonitor did not report a path")
     }
@@ -70,6 +72,7 @@ public final class NetworkDiagnosticsImpl: NSObject {
   @objc
   public func stopMonitoring() {
     queue.async {
+      self.monitor?.pathUpdateHandler = nil
       self.monitor?.cancel()
       self.monitor = nil
       self.lastEmitted = nil

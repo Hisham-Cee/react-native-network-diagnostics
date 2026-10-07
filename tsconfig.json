@@ -2,9 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-network-diagnostics": [
-        "./src/index"
-      ]
+      "react-native-network-diagnostics": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
@@ -15,9 +13,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
-    "lib": [
-      "ESNext"
-    ],
+    "lib": ["ESNext"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
@@ -31,8 +27,6 @@
     "strict": true,
     "target": "ESNext",
     "verbatimModuleSyntax": true,
-    "types": [
-      "jest"
-    ]
+    "types": ["jest"]
   }
 }
