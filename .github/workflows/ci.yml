@@ -31,6 +31,58 @@ jobs:
       - name: Typecheck files
         run: yarn typecheck
 
+      - name: Check formatting
+        run: yarn format
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Unit tests
+        run: yarn test --coverage
+
+      - name: Codegen check
+        run: yarn codegen:check
+
+  test-android-native:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Install JDK
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Kotlin unit tests (JVM)
+        run: |
+          cd example/android
+          ./gradlew :react-native-network-diagnostics:testDebugUnitTest --no-daemon --console=plain
+
+  test-ios-native:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Swift unit tests
+        run: |
+          cd ios
+          swift test
+
 
   build-library:
     runs-on: ubuntu-latest

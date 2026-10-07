@@ -1,5 +1,10 @@
 #import <NetworkDiagnosticsSpec/NetworkDiagnosticsSpec.h>
 
-@interface NetworkDiagnostics : NSObject <NativeNetworkDiagnosticsSpec>
+/**
+ * TurboModule entry point. Conforms to the Codegen-generated protocol and
+ * inherits the generated base class that provides `emitOnNetworkStateChange:`.
+ * All logic lives in Swift (NetworkDiagnosticsImpl.swift).
+ */
+@interface NetworkDiagnostics : NativeNetworkDiagnosticsSpecBase <NativeNetworkDiagnosticsSpec>
 
 @end

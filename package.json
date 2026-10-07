@@ -1,7 +1,7 @@
 {
   "name": "react-native-network-diagnostics",
   "version": "0.1.0",
-  "description": "Network health and quality diagnostics for React Native: internet validation, captive portal, metered/constrained state and HTTPS latency. Built on TurboModules.",
+  "description": "Network health diagnostics for React Native: OS internet validation, captive portal, metered and constrained state, and HTTPS latency to your own endpoint. New Architecture TurboModule.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
@@ -17,7 +17,6 @@
     "lib",
     "android",
     "ios",
-    "cpp",
     "*.podspec",
     "react-native.config.js",
     "!ios/build",
@@ -29,7 +28,12 @@
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
-    "!**/.*"
+    "!**/.*",
+    "!android/src/test",
+    "!ios/Tests",
+    "!ios/Package.swift",
+    "!**/*.test.ts",
+    "!**/*.test.tsx"
   ],
   "scripts": {
     "example": "yarn workspace react-native-network-diagnostics-example",
@@ -45,6 +49,14 @@
   },
   "keywords": [
     "react-native",
+    "network",
+    "network-diagnostics",
+    "connectivity",
+    "internet",
+    "latency",
+    "captive-portal",
+    "turbomodule",
+    "new-architecture",
     "ios",
     "android"
   ],
@@ -87,7 +99,7 @@
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*"
+    "react-native": ">=0.80.0"
   },
   "workspaces": [
     "example"
@@ -117,6 +129,11 @@
     "jsSrcsDir": "src",
     "android": {
       "javaPackageName": "com.networkdiagnostics"
+    },
+    "ios": {
+      "modulesProvider": {
+        "NetworkDiagnostics": "NetworkDiagnostics"
+      }
     }
   },
   "prettier": {
