@@ -1,12 +1,22 @@
 # Final implementation audit
 
-|            |                                                                                  |
-| ---------- | -------------------------------------------------------------------------------- |
-| Package    | `react-native-network-diagnostics` 0.1.0 (unpublished)                           |
-| Repository | `Hisham-Cee/react-native-network-diagnostics`, branch `main`                     |
-| Audit date | 2026-10-07                                                                       |
-| Auditor    | Claude (AI assistant), at the maintainer's request                               |
-| Verdict    | **Implementation complete for v0.1 scope. NOT release ready.** Score **68/100**. |
+| ---        | ---                                                                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| Package    | `react-native-network-diagnostics` 0.1.0 (unpublished)                                                |
+| Repository | `Hisham-Cee/react-native-network-diagnostics`, branch `main`                                          |
+| Audit date | 2026-10-07 (revision 2: 2026-10-08)                                                                   |
+| Auditor    | Claude (AI assistant), at the maintainer's request                                                    |
+| Verdict    | **Implementation complete for v0.1 scope. NOT release ready.** Score **72/100** (revision 1: 68/100). |
+
+## Revision history
+
+| Revision | Date       | Change                                                                                                                                                                                                                                                             |
+| -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1        | 2026-10-07 | Initial audit.                                                                                                                                                                                                                                                     |
+| 2        | 2026-10-08 | Incorporated the maintainer's second Android validation round: Gradle Kotlin unit tests, Android release build, and physical-device scenarios A1, A2, A3, A4, A9, A10, A11 and monitoring. Confirmed the corrected `yarn.lock` is committed. iOS status unchanged. |
+
+Android validation is substantially complete for the v0.1 scope. iOS remains the primary
+release blocker because no iOS build or runtime validation has yet been performed.
 
 ## How this audit was performed (read first)
 
@@ -14,8 +24,9 @@ Two environments were involved. The difference matters for every PASS below.
 
 1. **Maintainer's Windows PC** (`C:\react-native-network-diagnostics`). The auditor could
    read files there but could **not run commands** on it. Evidence from that machine comes
-   from (a) build artifacts found on disk and (b) output and screenshots the maintainer
-   pasted into the conversation.
+   from (a) build artifacts found on disk and (b) command output, screenshots and test
+   results the maintainer reported. Revision 2 results (Gradle unit tests, release build,
+   device scenarios) were run by the maintainer on that PC and phone.
 2. **Auditor's Linux sandbox** (Ubuntu 24.04, Node 22.22.0, JDK 21, Kotlin 2.0.21). A copy
    of the repository was kept here. Before the audit, the 101 tracked text files on the
    Windows PC were copied over and compared line by line (ignoring CRLF). 99 could be
@@ -35,7 +46,8 @@ otherwise.
 
 ## 1. Executive summary
 
-The package does what its v0.1 scope says, on Android at least. It is a New Architecture
+The package does what its v0.1 scope says on Android, where it has now been validated on a
+physical device across the main scenarios. It is a New Architecture
 TurboModule (TypeScript Codegen spec, Kotlin on Android, Swift behind a thin Objective-C++
 adapter on iOS, no C++). It reports OS network state and, when given an HTTPS endpoint,
 probes it with real DNS/TCP/TLS/total timings and normalized error codes.
@@ -45,13 +57,20 @@ probes it with real DNS/TCP/TLS/total timings and normalized error codes.
 - 156 Jest tests pass, with 99.6% statement coverage of `src/`.
 - Typecheck, lint, format, library build and Codegen all pass.
 - A consumer project type-checks against the packed tarball.
-- On Android, the example app compiled on the maintainer's PC and ran on a real phone.
-  Wi-Fi diagnostics returned plausible, internally consistent values.
-- Monitoring was reported working by the maintainer.
+- Android Kotlin unit tests pass under Gradle on the maintainer's PC.
+- The Android example app builds in debug and release configurations. (The release build
+  ran with R8 shrinking disabled, the React Native template default.)
+- On a physical Android phone: Wi-Fi (A1), cellular including `metered: true` (A2),
+  airplane mode / offline with no probe sent (A3), endpoint timeout (A4/A10),
+  `DNS_FAILURE` (A9), `TLS_FAILURE` (A11) and network monitoring all PASS.
 
-**Not verified:** the iOS code has never been compiled. No Swift test has run. Kotlin unit
-tests ran only through a stand-in harness, not Gradle. Most of the manual device test
-matrix is still open. CI has never run.
+**Not verified:**
+
+- iOS code has never been compiled, and no Swift test has run.
+- CI has never run.
+- Android: captive portal (no real captive-portal network available), VPN, metered Wi-Fi,
+  Data Saver, HTTP error status, slow network, network switch mid-probe, API 24/25, other
+  device models, R8 shrinking, and leak profiling.
 
 **The audit found and fixed four issues:**
 
@@ -61,7 +80,7 @@ matrix is still open. CI has never run.
 3. False documentation claims about web support and Expo.
 4. A missing `.gitignore` entry for `.kotlin/`.
 
-**Biggest remaining risk:** iOS is shipped untested. A cross-platform package should not be
+**Biggest remaining risk:** iOS is untested. A cross-platform package should not be
 published until it has at least compiled and run once on iOS.
 
 ---
@@ -78,20 +97,25 @@ af26038  feat(android): Kotlin TurboModule implementation
 72700ab  feat(ios): Swift implementation behind an Objective-C++ TurboModule
 6ee4b59  docs: README, architecture, API, ...
 <local>  fix(example): readable labels in dark mode   (committed by maintainer on the PC)
+<local>  chore: final audit fixes and report          (committed by maintainer on the PC)
 ```
+
+Revision 2 check: the PC's git index (copied from `.git/index`) lists the same 121 files
+with the same blob hashes as the auditor's copy of this commit, including the corrected
+`yarn.lock`.
 
 - `main` on the PC is 6 commits ahead of `origin/main`. Nothing has been pushed.
 - The maintainer's own last commit is content-identical to sandbox commit `6de73ba`.
 
-### Uncommitted state on the PC (inferred from file comparison; `git status` could not be run there)
+### Uncommitted state on the PC at revision 1 (inferred from file comparison; `git status` could not be run there)
 
-| Item                                                                                                                            | State                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `yarn.lock`                                                                                                                     | Modified by the maintainer's `yarn install`. Contains the correct fix (see Blockers). Must be committed. |
-| `example/android/.kotlin/`                                                                                                      | Untracked Kotlin compiler cache. Now ignored by `.gitignore` (audit change).                             |
-| Build outputs (`android/build`, `example/android/build`, `example/android/app/build`, `.gradle`, `.cxx`, `node_modules`, `lib`) | Present and git-ignored.                                                                                 |
+| Item                                                                                                                            | State                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `yarn.lock`                                                                                                                     | Revision 1: modified and uncommitted. Revision 2: committed in "chore: final audit fixes and report" (verified via the PC's git index). |
+| `example/android/.kotlin/`                                                                                                      | Untracked Kotlin compiler cache. Now ignored by `.gitignore` (audit change).                                                            |
+| Build outputs (`android/build`, `example/android/build`, `example/android/app/build`, `.gradle`, `.cxx`, `node_modules`, `lib`) | Present and git-ignored.                                                                                                                |
 
-### Files changed by this audit (uncommitted in both places)
+### Files changed by this audit (revision 1; committed by the maintainer in "chore: final audit fixes and report")
 
 | File                                                            | Change                                                                                  |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -142,7 +166,7 @@ All exports of `src/index.ts`. "Docs" = documented in `docs/API.md` and/or READM
 | `useNetworkDiagnostics`                                                                                                                                                                                       | hook      | `(options?: UseNetworkDiagnosticsOptions) => { diagnostics, loading, error, refresh }`                                                                                            | Android, iOS | Yes                                   | Yes (10 cases) |
 | `UseNetworkDiagnosticsOptions`, `UseNetworkDiagnosticsResult`                                                                                                                                                 | types     | Hook options (`runOnMount`, `monitor`, `monitorDebounceMs` + diagnostic options) / result                                                                                         | -            | Yes                                   | n/a            |
 | `classifyNetworkQuality`                                                                                                                                                                                      | function  | `(input: QualityInput, thresholds?) => NetworkQuality` (pure)                                                                                                                     | any          | Yes                                   | Yes            |
-| `classifyLatency`                                                                                                                                                                                             | function  | `(ms, thresholds?) => 'excellent' \| 'good' \| 'fair' \| 'poor'`                                                                                                                  | any          | Yes                                   | Yes            |
+| `classifyLatency`                                                                                                                                                                                             | function  | `(ms, thresholds?) => 'excellent' \                                                                                                                                               | 'good' \     | 'fair' \                              | 'poor'`        | any | Yes | Yes |
 | `DEFAULT_QUALITY_THRESHOLDS`                                                                                                                                                                                  | const     | frozen `{ excellentMs: 150, goodMs: 400, fairMs: 1000 }`                                                                                                                          | any          | Yes                                   | Yes            |
 | `NetworkDiagnosticsError`                                                                                                                                                                                     | class     | `Error` with `code: NetworkDiagnosticErrorCode`                                                                                                                                   | any          | Yes                                   | Yes            |
 | `isNetworkDiagnosticsError`, `isNetworkDiagnosticErrorCode`                                                                                                                                                   | functions | type guards                                                                                                                                                                       | any          | Partly (README table)                 | Yes            |
@@ -168,22 +192,22 @@ first failure), `qualityThresholds`.
 
 ## 5. Platform capability matrix
 
-| Capability                   | Android                                                                                         | iOS                                                                | Notes                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| Connected                    | **Supported**: active network exists and is not suspended (API 28+)                             | **Supported (code only)**: `NWPath.status == .satisfied`           | "Connected" means the OS has a route, not proof of internet.                    |
-| Network type                 | **Supported**: ethernet > wifi > cellular > other > vpn                                         | **Supported (code only)**: via `usesInterfaceType`                 | iOS never reports `vpn`.                                                        |
-| VPN flag                     | **Supported** (`TRANSPORT_VPN`)                                                                 | **Unavailable**: `undefined`                                       | Correctly documented.                                                           |
-| Internet validated (OS)      | **Supported** (`NET_CAPABILITY_VALIDATED` + `INTERNET`)                                         | **Unavailable**: `undefined`                                       | Verified true on device.                                                        |
-| Captive portal (OS)          | **Supported** (`NET_CAPABILITY_CAPTIVE_PORTAL`)                                                 | **Unavailable**: `undefined`                                       | Android not yet tested behind a real portal.                                    |
-| Metered                      | **Supported** (not `NOT_METERED` and not `TEMPORARILY_NOT_METERED`)                             | **Supported (code only)** (`isExpensive`)                          | Semantics differ, as documented.                                                |
-| Constrained                  | **Partial**: Data Saver restricting this app, metered networks only; updates on next event/read | **Supported (code only)** (`isConstrained`, Low Data Mode)         | Different concepts, as documented.                                              |
-| Actual internet reachability | **Supported via probe** (developer endpoint)                                                    | **Supported via probe (code only)**                                | Without an endpoint only the OS signal exists (Android) or nothing (iOS).       |
-| HTTPS latency (`httpsMs`)    | **Supported**: OkHttp `callStart` to `responseHeadersEnd`                                       | **Supported (code only)**: `fetchStartDate` to `responseStartDate` | Verified 352 ms on device.                                                      |
-| DNS time                     | **Supported**: OkHttp `dnsStart`/`dnsEnd`                                                       | **Supported (code only)**: transaction metrics                     | Real resolver timing; may be cache-served.                                      |
-| TCP / TLS time               | **Supported**                                                                                   | **Supported (code only)**                                          | Verified 72 ms / 183 ms on device.                                              |
-| Backend status code          | **Supported**                                                                                   | **Supported (code only)**                                          | Redirects not followed; body not read.                                          |
-| Change monitoring            | **Supported** (`registerDefaultNetworkCallback`)                                                | **Supported (code only)** (`NWPathMonitor`)                        | Android reported working by tester.                                             |
-| Web                          | Not supported                                                                                   | Not supported                                                      | Importing fails on react-native-web (no `TurboModuleRegistry`). Docs corrected. |
+| Capability                   | Android                                                                                         | iOS                                                                | Notes                                                                                                                                                                                |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Connected                    | **Supported**: active network exists and is not suspended (API 28+)                             | **Supported (code only)**: `NWPath.status == .satisfied`           | "Connected" means the OS has a route, not proof of internet.                                                                                                                         |
+| Network type                 | **Supported**: ethernet > wifi > cellular > other > vpn                                         | **Supported (code only)**: via `usesInterfaceType`                 | iOS never reports `vpn`.                                                                                                                                                             |
+| VPN flag                     | **Supported** (`TRANSPORT_VPN`)                                                                 | **Unavailable**: `undefined`                                       | Correctly documented.                                                                                                                                                                |
+| Internet validated (OS)      | **Supported** (`NET_CAPABILITY_VALIDATED` + `INTERNET`)                                         | **Unavailable**: `undefined`                                       | Verified on device: true on Wi-Fi and cellular, false when offline.                                                                                                                  |
+| Captive portal (OS)          | **Supported** (`NET_CAPABILITY_CAPTIVE_PORTAL`)                                                 | **Unavailable**: `undefined`                                       | NOT VERIFIED on a device: no real captive-portal network was available. Device runs showed `captivePortal: false` on normal Wi-Fi and cellular.                                      |
+| Metered                      | **Supported** (not `NOT_METERED` and not `TEMPORARILY_NOT_METERED`)                             | **Supported (code only)** (`isExpensive`)                          | Verified on device: cellular `true`, Wi-Fi `false`. User-marked metered Wi-Fi not tested.                                                                                            |
+| Constrained                  | **Partial**: Data Saver restricting this app, metered networks only; updates on next event/read | **Supported (code only)** (`isConstrained`, Low Data Mode)         | Different concepts, as documented. Device showed `false` on cellular with Data Saver off; Data Saver on not tested.                                                                  |
+| Actual internet reachability | **Supported via probe** (developer endpoint)                                                    | **Supported via probe (code only)**                                | Without an endpoint only the OS signal exists (Android) or nothing (iOS). Android probe verified: 204 reachable, `TIMEOUT`, `DNS_FAILURE`, `TLS_FAILURE`, and no probe when offline. |
+| HTTPS latency (`httpsMs`)    | **Supported**: OkHttp `callStart` to `responseHeadersEnd`                                       | **Supported (code only)**: `fetchStartDate` to `responseStartDate` | Verified on device: 352 and 386 ms (Wi-Fi), 388 ms (cellular).                                                                                                                       |
+| DNS time                     | **Supported**: OkHttp `dnsStart`/`dnsEnd`                                                       | **Supported (code only)**: transaction metrics                     | Real resolver timing; may be cache-served.                                                                                                                                           |
+| TCP / TLS time               | **Supported**                                                                                   | **Supported (code only)**                                          | Verified on device: TCP 50 to 79 ms, TLS 112 to 183 ms across runs.                                                                                                                  |
+| Backend status code          | **Supported**                                                                                   | **Supported (code only)**                                          | Redirects not followed; body not read.                                                                                                                                               |
+| Change monitoring            | **Supported** (`registerDefaultNetworkCallback`)                                                | **Supported (code only)** (`NWPathMonitor`)                        | Android PASS on a physical device across network changes.                                                                                                                            |
+| Web                          | Not supported                                                                                   | Not supported                                                      | Importing fails on react-native-web (no `TurboModuleRegistry`). Docs corrected.                                                                                                      |
 
 "(code only)" = implemented but never compiled or run.
 
@@ -218,17 +242,22 @@ booleans as `undefined`, and the iOS mapper's `toDictionary()` never emits `vpn`
 | Included   | DNS + TCP + TLS + request + server time to first response header.                                                                             |
 | Body       | Never downloaded.                                                                                                                             |
 
-Device evidence: DNS 8 + TCP 72 + TLS 183 = 263 ms, inside total 352 ms. The remaining
-89 ms is request and server time. The numbers are internally consistent.
+Device evidence (phase times always below the total; the rest is request and server time):
 
-Caveats (documented unless marked):
+| Run               | DNS | TCP | TLS | Sum of phases | `httpsMs` |
+| ----------------- | --- | --- | --- | ------------- | --------- |
+| Wi-Fi, round 1    | 8   | 72  | 183 | 263           | 352       |
+| Wi-Fi, round 2    | 58  | 50  | 112 | 220           | 386       |
+| Cellular, round 2 | 12  | 79  | 123 | 214           | 388       |
+
+Caveats (all now documented in `docs/API.md` and the README, revision 2):
 
 - The metric includes server processing time, so a slow server looks like a slow network.
 - One sample is noisy; `samples` (median) is available.
-- **Not documented:** on Android, OkHttp fires `callStart` at `enqueue()`, so
+- On Android, OkHttp fires `callStart` at `enqueue()`, so
   dispatcher queue time is included. This is negligible except under heavy concurrent use
   of the same prober.
-- **Not documented:** the probe uses its own `OkHttpClient` and `URLSession`, not the
+- The probe uses its own `OkHttpClient` and `URLSession`, not the
   app's networking stack. App interceptors, certificate pinning and custom proxies are not
   exercised. The Android network security config still applies.
 
@@ -259,7 +288,7 @@ The rationale is documented: a fresh HTTPS request is about three round trips, a
 Nielsen's 1 s limit. The thresholds are explicitly called heuristics and are overridable.
 HTTP status codes are ignored on purpose.
 
-**Accuracy risk (minor, undocumented):** right after a network switch, Android may
+**Accuracy risk (minor, documented in revision 2):** right after a network switch, Android may
 briefly report `validated: false` while it validates. Without an endpoint, a monitored
 hook can then show `poor` for a moment.
 
@@ -308,8 +337,11 @@ hook can then show `poor` for a moment.
 | Cancellation                    | Not supported                                                                               | Not supported                                                                                                                                                         | Results after unmount are discarded                                  |
 | Cleanup                         | `invalidate()` unregisters callback                                                         | `invalidate` stops `NWPathMonitor`                                                                                                                                    | Listener ref-count, idempotent unsubscribe                           |
 
-Android and iOS errors are normalized consistently. The Android mapping is unit-tested (ran
-in harness). The iOS mapping has tests that have never run.
+Android and iOS errors are normalized consistently. The Android mapping is unit-tested
+(Gradle PASS in revision 2) and was observed on a physical device for `DNS_FAILURE`,
+`TLS_FAILURE`, `TIMEOUT` and the offline `CONNECTION_FAILURE` path (which the JS layer
+produces without sending a request). Native `ConnectException`-style connection failures
+are covered by unit tests only. The iOS mapping has tests that have never run.
 
 **Gaps:**
 
@@ -346,27 +378,33 @@ in harness). The iOS mapping has tests that have never run.
 
 ## 10. Testing results
 
-| Check                              | Command                                                         | Where                          | Result                             | Evidence                                                                                                                                                                      |
-| ---------------------------------- | --------------------------------------------------------------- | ------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lockfile immutability (CI install) | `yarn install --immutable`                                      | Sandbox                        | **FAIL before fix → PASS after**   | `YN0028: The lockfile would have been modified`. Fixed by regenerating `yarn.lock`, which now matches the PC copy byte for byte.                                              |
-| TypeScript                         | `yarn typecheck`                                                | Sandbox                        | **PASS**                           | exit 0                                                                                                                                                                        |
-| ESLint                             | `yarn lint`                                                     | Sandbox                        | **PASS**                           | exit 0, no output                                                                                                                                                             |
-| Prettier                           | `yarn format`                                                   | Sandbox                        | **PASS**                           | "All matched files use Prettier code style!"                                                                                                                                  |
-| Unit tests                         | `yarn test:coverage --ci`                                       | Sandbox                        | **PASS**                           | 8 suites, 156 tests; statements 99.64%, branches 97%, functions 100%                                                                                                          |
-| Unit tests                         | `yarn test`                                                     | Windows PC (run by maintainer) | **PASS**                           | Pasted output: 8 suites, 156 tests                                                                                                                                            |
-| Library build                      | `yarn prepare` (bob)                                            | Sandbox                        | **PASS**                           | `lib/module` + `lib/typescript` written                                                                                                                                       |
-| Codegen                            | `yarn codegen:check`                                            | Sandbox                        | **PASS**                           | Android `NativeNetworkDiagnosticsSpec.java` OK, iOS `NetworkDiagnosticsSpec.h` OK                                                                                             |
-| Consumer typing                    | `tsc` on a temp app importing the packed tarball                | Sandbox                        | **PASS**                           | `CONSUMER_TYPES_OK`                                                                                                                                                           |
-| npm package                        | `npm pack --dry-run` and real `npm pack` + extract              | Sandbox                        | **PASS**                           | 72 files, 53.1 kB packed, 189.3 kB unpacked                                                                                                                                   |
-| Kotlin unit tests (pure logic)     | `kotlinc` 2.0.21 + local JUnit stand-in harness                 | Sandbox                        | **PASS (non-standard runner)**     | 27/27 passed. Not run with real JUnit/Gradle.                                                                                                                                 |
-| Kotlin unit tests (Gradle)         | `./gradlew :react-native-network-diagnostics:testDebugUnitTest` | -                              | **NOT RUN**                        | Sandbox has no Android SDK; maintainer has not run it yet                                                                                                                     |
-| Android library + app build        | `yarn example android` (Gradle `app:installDebug`)              | Windows PC (run by maintainer) | **PASS**                           | Library `.class` files for all 8 Kotlin sources and `app-debug.apk` (118.7 MB, 2026-10-07 14:12 IST) found on disk; Gradle problems report: 13 deprecation warnings, 0 errors |
-| Android on device                  | Example app, Wi-Fi, sample endpoint                             | Maintainer's phone             | **PASS (one scenario)**            | Screenshot: connected, Wi-Fi, validated, no portal, HTTP 204, 352/8/72/183 ms, GOOD                                                                                           |
-| Android monitoring                 | Example app, toggle Wi-Fi with monitor on                       | Maintainer's phone             | **PASS (reported, no screenshot)** | Maintainer's statement                                                                                                                                                        |
-| Android release / R8 build         | -                                                               | -                              | **NOT RUN**                        |                                                                                                                                                                               |
-| iOS pod install / build            | `pod install`, `yarn example ios`                               | -                              | **NOT RUN: requires macOS/Xcode**  |                                                                                                                                                                               |
-| Swift unit tests                   | `cd ios && swift test`                                          | -                              | **NOT RUN: requires macOS/Xcode**  |                                                                                                                                                                               |
-| CI workflow                        | `.github/workflows/ci.yml`                                      | -                              | **NOT RUN**                        | Never pushed                                                                                                                                                                  |
+| Check                                      | Command                                                                                | Where                                              | Result                            | Evidence                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------ | -------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lockfile immutability (CI install)         | `yarn install --immutable`                                                             | Sandbox                                            | **FAIL before fix → PASS after**  | `YN0028: The lockfile would have been modified`. Fixed by regenerating `yarn.lock`, which now matches the PC copy byte for byte.                                                                                                                                                             |
+| TypeScript                                 | `yarn typecheck`                                                                       | Sandbox                                            | **PASS**                          | exit 0                                                                                                                                                                                                                                                                                       |
+| ESLint                                     | `yarn lint`                                                                            | Sandbox                                            | **PASS**                          | exit 0, no output                                                                                                                                                                                                                                                                            |
+| Prettier                                   | `yarn format`                                                                          | Sandbox                                            | **PASS**                          | "All matched files use Prettier code style!"                                                                                                                                                                                                                                                 |
+| Unit tests                                 | `yarn test:coverage --ci`                                                              | Sandbox                                            | **PASS**                          | 8 suites, 156 tests; statements 99.64%, branches 97%, functions 100%                                                                                                                                                                                                                         |
+| Unit tests                                 | `yarn test`                                                                            | Windows PC (run by maintainer)                     | **PASS**                          | Pasted output: 8 suites, 156 tests                                                                                                                                                                                                                                                           |
+| Library build                              | `yarn prepare` (bob)                                                                   | Sandbox                                            | **PASS**                          | `lib/module` + `lib/typescript` written                                                                                                                                                                                                                                                      |
+| Codegen                                    | `yarn codegen:check`                                                                   | Sandbox                                            | **PASS**                          | Android `NativeNetworkDiagnosticsSpec.java` OK, iOS `NetworkDiagnosticsSpec.h` OK                                                                                                                                                                                                            |
+| Consumer typing                            | `tsc` on a temp app importing the packed tarball                                       | Sandbox                                            | **PASS**                          | `CONSUMER_TYPES_OK`                                                                                                                                                                                                                                                                          |
+| npm package                                | `npm pack --dry-run` and real `npm pack` + extract                                     | Sandbox                                            | **PASS**                          | 72 files, 53.1 kB packed, 189.3 kB unpacked                                                                                                                                                                                                                                                  |
+| Kotlin unit tests (pure logic)             | `kotlinc` 2.0.21 + local JUnit stand-in harness                                        | Sandbox                                            | **PASS (non-standard runner)**    | 27/27 passed. Not run with real JUnit/Gradle. Superseded by the Gradle PASS in revision 2 (next row).                                                                                                                                                                                        |
+| Kotlin unit tests (Gradle)                 | `.\gradlew :react-native-network-diagnostics:testDebugUnitTest` (in `example/android`) | Windows PC, JDK 17 (run by maintainer, revision 2) | **PASS**                          | `BUILD SUCCESSFUL`, 29 actionable tasks (5 executed, 24 up-to-date). Warnings only: invalid Java 11 entry in the Windows registry (not used) and Gradle 10 deprecation notice.                                                                                                               |
+| Android library + app build                | `yarn example android` (Gradle `app:installDebug`)                                     | Windows PC (run by maintainer)                     | **PASS**                          | Library `.class` files for all 8 Kotlin sources and `app-debug.apk` (118.7 MB, 2026-10-07 14:12 IST) found on disk; Gradle problems report: 13 deprecation warnings, 0 errors                                                                                                                |
+| Android on device, A1 Wi-Fi                | Example app, sample endpoint                                                           | Maintainer's phone                                 | **PASS**                          | Round 1 screenshot: HTTP 204, 352/8/72/183 ms, GOOD. Round 2: HTTP 204, 386/58/50/112 ms, GOOD                                                                                                                                                                                               |
+| Android on device, A2 cellular             | Example app, sample endpoint                                                           | Maintainer's phone (revision 2)                    | **PASS**                          | Cellular, validated, metered yes, constrained no, HTTP 204, 388/12/79/123 ms, GOOD                                                                                                                                                                                                           |
+| Android on device, A3 airplane mode        | Example app                                                                            | Maintainer's phone (revision 2)                    | **PASS**                          | Disconnected, type none, `CONNECTION_FAILURE`, timings not measured (no probe), OFFLINE                                                                                                                                                                                                      |
+| Android on device, A4/A10 endpoint timeout | Example app                                                                            | Maintainer's phone (revision 2)                    | **PASS**                          | Wi-Fi connected, validated no in this capture, `TIMEOUT`, POOR. Black-hole setup and timing not recorded                                                                                                                                                                                     |
+| Android on device, A9 DNS failure          | `https://clients3.google.invalid`                                                      | Maintainer's phone (revision 2)                    | **PASS**                          | Wi-Fi validated yes (device online), `DNS_FAILURE`, POOR                                                                                                                                                                                                                                     |
+| Android on device, A11 TLS failure         | Invalid-certificate endpoint                                                           | Maintainer's phone (revision 2)                    | **PASS**                          | `TLS_FAILURE` shown; other values not recorded                                                                                                                                                                                                                                               |
+| Android on device, A5 captive portal       | -                                                                                      | -                                                  | **NOT RUN**                       | No real captive-portal network available                                                                                                                                                                                                                                                     |
+| Android monitoring                         | Example app, monitor on, network changes                                               | Maintainer's phone                                 | **PASS**                          | Confirmed by the maintainer as tested successfully across network changes (revision 2)                                                                                                                                                                                                       |
+| Android release build                      | `.\gradlew :app:assembleRelease` (in `example/android`)                                | Windows PC, JDK 17 (run by maintainer, revision 2) | **PASS**                          | `BUILD SUCCESSFUL`, 112 actionable tasks (97 executed, 15 up-to-date); `app-release.apk` (52.5 MB, 2026-10-07 16:04 IST) on disk. R8 shrinking **not exercised**: `enableProguardInReleaseBuilds = false` in the example, and no R8 mapping output exists. Release APK runtime not recorded. |
+| iOS pod install / build                    | `pod install`, `yarn example ios`                                                      | -                                                  | **NOT RUN: requires macOS/Xcode** |                                                                                                                                                                                                                                                                                              |
+| Swift unit tests                           | `cd ios && swift test`                                                                 | -                                                  | **NOT RUN: requires macOS/Xcode** |                                                                                                                                                                                                                                                                                              |
+| CI workflow                                | `.github/workflows/ci.yml`                                                             | -                                                  | **NOT RUN**                       | Never pushed. The lockfile cause of a certain failure is fixed and committed.                                                                                                                                                                                                                |
 
 ---
 
@@ -390,6 +428,9 @@ in harness). The iOS mapping has tests that have never run.
 - **Kotlin pure logic:** capability mapping, VPN/transport priority, API-level nulls,
   error cause-chain walking including cycles, timing math.
 
+**Revision 2:** the Kotlin unit tests now also pass under real JUnit/Gradle, and the main
+Android scenarios have been exercised manually on a device (see `docs/MANUAL_TESTING.md`).
+
 **Important missing tests:**
 
 1. Any test of the Android `NetworkDiagnosticsModule`, `EndpointProber` or
@@ -408,7 +449,7 @@ in harness). The iOS mapping has tests that have never run.
 | Area                 | Finding                                                                                                                                                                                                                                                                                                                             |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Language / structure | Kotlin. 8 source files. Android types are confined to `NetworkInspector`, `NetworkDiagnosticsModule` and `EndpointProber`; logic sits in pure files.                                                                                                                                                                                |
-| Registration         | `BaseReactPackage` + `ReactModuleInfo(isTurboModule = true)`. Works on device.                                                                                                                                                                                                                                                      |
+| Registration         | `BaseReactPackage` + `ReactModuleInfo(isTurboModule = true)`. Works on device in debug builds.                                                                                                                                                                                                                                      |
 | Threading            | `getNetworkState`: quick binder call on the native-modules thread. Probe: OkHttp async dispatcher. Callbacks: ConnectivityManager thread. Nothing on the UI thread.                                                                                                                                                                 |
 | Concurrency safety   | `monitorLock` guards callback, `lastEmitted` and registration. `ProbeTimings` fields `@Volatile`. `AtomicBoolean` ensures a single resolve.                                                                                                                                                                                         |
 | Lifecycle            | `invalidate()` calls `stopMonitoring()`. Unregister is guarded against `IllegalArgumentException`.                                                                                                                                                                                                                                  |
@@ -416,9 +457,9 @@ in harness). The iOS mapping has tests that have never run.
 | APIs                 | `ConnectivityManager.activeNetwork` (23+), `getNetworkCapabilities`, `registerDefaultNetworkCallback` (24+), `restrictBackgroundStatus` (24+). API-level guards for `WIFI_AWARE` (26), `LOWPAN` (27), `NOT_SUSPENDED` (28), `TEMPORARILY_NOT_METERED` (30), `USB` (31). No deprecated `NetworkInfo` / `getActiveNetworkInfo` usage. |
 | Permissions          | `ACCESS_NETWORK_STATE`, `INTERNET` only.                                                                                                                                                                                                                                                                                            |
 | SDK levels           | minSdk 24, compileSdk 36 (scaffold defaults; the app's values win via `rootProject.ext`).                                                                                                                                                                                                                                           |
-| Gradle               | AGP 8.7.2 classpath in library buildscript, Kotlin 2.0.21. Built under the example's Gradle 9.3.1 / AGP 8.12.0.                                                                                                                                                                                                                     |
+| Gradle               | AGP 8.7.2 classpath in library buildscript, Kotlin 2.0.21. Built under the example's Gradle 9.3.1 / AGP 8.12.0, JDK 17. Debug build, release build and `testDebugUnitTest` all PASS on Windows.                                                                                                                                     |
 | Gradle deprecation   | `android/build.gradle:39` uses `propName value` syntax (deprecated, fails in Gradle 10). Same pattern in the scaffold's example app. Low priority.                                                                                                                                                                                  |
-| ProGuard/R8          | No consumer rules shipped. No reflection on library classes (package instantiates the module directly), so none should be needed. **Release/minified build not tested.**                                                                                                                                                            |
+| ProGuard/R8          | No consumer rules shipped. No reflection on library classes (package instantiates the module directly), so none should be needed. Release build PASS (revision 2), but with `minifyEnabled` off, so **R8 shrinking/obfuscation is not verified**.                                                                                   |
 | Dependency           | `com.squareup.okhttp3:okhttp:4.9.2`. React Native exposes the same version as `api`; Gradle resolves to the app's version if newer.                                                                                                                                                                                                 |
 | Swallowed exceptions | Two `Log.w` catches (callback registration, emit). Intentional, but registration failure is invisible to JS.                                                                                                                                                                                                                        |
 | New Architecture     | Correct.                                                                                                                                                                                                                                                                                                                            |
@@ -514,7 +555,7 @@ set.
 
 ## 16. Documentation audit
 
-**Discrepancies found and fixed in this audit:**
+**Discrepancies found and fixed in revision 1:**
 
 | Doc                                  | Claim                                             | Reality                                                                         | Action                                                         |
 | ------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------- |
@@ -526,13 +567,18 @@ set.
 | API.md error table                   | Web listed as a `DIAGNOSTIC_UNAVAILABLE` cause    | Web fails at import                                                             | Removed                                                        |
 | MANUAL_TESTING                       | "None of the scenarios have been executed"        | A1 and the monitoring check have been                                           | Recorded                                                       |
 
-**Remaining documentation issues (not fixed):**
+**Revision 2 documentation updates:**
 
-- `docs/CONTRIBUTING.md` says "CI runs all of the above", but CI has never run. It will
-  only pass after `yarn.lock` is committed.
-- Undocumented accuracy caveats: OkHttp queue time inside `httpsMs`; probes bypass the
-  app's own networking stack; brief `validated: false` after a network switch.
-- `DEFAULT_TIMEOUT_MS` and the other exported constants are not listed by name in API.md.
+| Doc                      | Change                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/MANUAL_TESTING.md` | Status summary, PASS / NOT RUN for every Android and iOS row, observed error codes, Gradle and release-build results. Captive portal recorded as NOT RUN with the reason. |
+| `README.md`              | Status banner, Limitations and Testing reflect the Android validation; iOS and captive portal stated as unverified; accuracy caveats added.                               |
+| `docs/API.md`            | Exported constants named; the three accuracy caveats documented.                                                                                                          |
+| `docs/CONTRIBUTING.md`   | No longer claims CI runs; says it is configured but has not run yet.                                                                                                      |
+
+**Remaining documentation issues:** none known that contradict verified behavior. The
+README and docs still describe iOS behavior from code inspection only; this is stated
+wherever iOS appears.
 
 Otherwise the README covers description, rationale, install, requirements, New
 Architecture, usage, API, hook, configuration, platform support, limitations, privacy,
@@ -599,8 +645,8 @@ troubleshooting, testing, contributing and license. These sections match the cod
 | Secrets / credentials in tracked files | None                                                                                                                                                    |
 | IDE / local config tracked             | None (`.vscode`, `.idea`, `local.properties` ignored)                                                                                                   |
 | Build artifacts tracked                | None (`lib/`, `build/`, `.gradle`, `.cxx`, `coverage/`, `node_modules` ignored)                                                                         |
-| `.kotlin/`                             | Was untracked and not ignored on the PC; now ignored (audit change)                                                                                     |
-| `yarn.lock`                            | Out of date in commit history; PC has the corrected copy uncommitted                                                                                    |
+| `.kotlin/`                             | Ignored since the audit commit                                                                                                                          |
+| `yarn.lock`                            | Corrected copy committed on the PC in "chore: final audit fixes and report" (revision 2, verified via `.git/index`)                                     |
 | Commit authorship                      | All commits by `Hisham Mohammed <hishamcee@gmail.com>`, unsigned. GitHub will show them as unverified unless signed before pushing. Informational only. |
 | Pushed / published                     | Nothing pushed, nothing published                                                                                                                       |
 
@@ -608,24 +654,26 @@ troubleshooting, testing, contributing and license. These sections match the cod
 
 ## 20. Release readiness score
 
-| Area                        | Score | Reason                                                                                                          |
-| --------------------------- | ----- | --------------------------------------------------------------------------------------------------------------- |
-| Architecture                | 85    | Correct TurboModule/Codegen design, no legacy path, proven on Android                                           |
-| API design                  | 82    | Small, typed, honest `undefined`s; no cancellation; constants under-documented                                  |
-| Native implementation       | 70    | Android solid and running; iOS complete but never compiled (one probable compile error fixed blind)             |
-| Android readiness           | 72    | Builds and runs; 1 of 15 manual scenarios plus monitoring verified; Gradle unit tests and release build not run |
-| iOS readiness               | 30    | Zero builds, zero runs, zero executed tests                                                                     |
-| Testing                     | 62    | Strong JS tests; native tests not run in real runners; no E2E                                                   |
-| Documentation               | 82    | Thorough; several overclaims found and corrected                                                                |
-| npm packaging               | 85    | Clean tarball, correct entry points; lockfile and CI unproven                                                   |
-| Security / privacy          | 95    | No telemetry, no default endpoint, minimal permissions                                                          |
-| Maintainability             | 82    | Pure logic separated, consistent naming, docs for contributors                                                  |
-| Competitive differentiation | 62    | Real but niche; weak without an endpoint, weaker on iOS                                                         |
+| Area                        | Score | Reason                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architecture                | 85    | Correct TurboModule/Codegen design, no legacy path, proven on Android                                                                                                                                                                                                                   |
+| API design                  | 82    | Small, typed, honest `undefined`s; no cancellation; constants under-documented                                                                                                                                                                                                          |
+| Native implementation       | 76    | Android verified across the main device scenarios; iOS complete but never compiled (one probable compile error fixed blind). Revision 1: 70                                                                                                                                             |
+| Android readiness           | 86    | Gradle unit tests, debug and release builds PASS; A1, A2, A3, A4, A9, A10, A11 and monitoring PASS on a device. Not verified: captive portal, VPN, metered Wi-Fi, Data Saver, HTTP error, slow network, mid-probe switch, API 24/25, other devices, R8 shrinking, leaks. Revision 1: 72 |
+| iOS readiness               | 30    | Zero builds, zero runs, zero executed tests                                                                                                                                                                                                                                             |
+| Testing                     | 72    | Strong JS tests; Kotlin tests pass in Gradle; broad Android manual coverage; no iOS tests executed; no E2E. Revision 1: 62                                                                                                                                                              |
+| Documentation               | 85    | Thorough; overclaims corrected; validation status recorded per scenario; caveats documented. Revision 1: 82                                                                                                                                                                             |
+| npm packaging               | 87    | Clean tarball, correct entry points, corrected lockfile committed; CI still unproven. Revision 1: 85                                                                                                                                                                                    |
+| Security / privacy          | 95    | No telemetry, no default endpoint, minimal permissions                                                                                                                                                                                                                                  |
+| Maintainability             | 82    | Pure logic separated, consistent naming, docs for contributors                                                                                                                                                                                                                          |
+| Competitive differentiation | 62    | Real but niche; weak without an endpoint, weaker on iOS                                                                                                                                                                                                                                 |
 
-**Overall score: 68/100. Significant work remaining.**
+**Overall score: 72/100. Needs fixes before release.** (Revision 1: 68/100.)
 
-The unweighted mean of the areas is 73. The overall is held below 70 because an untested
-platform is a release blocker for a package that advertises iOS support.
+The unweighted mean of the areas is 76 (revision 1: 73). The overall is held below the
+mean because an untested platform is a release blocker for a package that advertises iOS
+support. Android validation is substantially complete for the v0.1 scope; iOS remains the
+primary release blocker because no iOS build or runtime validation has yet been performed.
 
 ---
 
@@ -634,33 +682,40 @@ platform is a release blocker for a package that advertises iOS support.
 1. **iOS has never been built or run.** Run `pod install`, build the example app in
    Xcode, run `swift test` in `ios/`, and run the iOS checklist at least on a simulator
    (I1, I3, I9 to I12), plus Low Data Mode (I6) on a device.
-2. **Commit the corrected `yarn.lock`.** Without it, CI's `yarn install --immutable`
-   fails. The maintainer's PC already has the right file uncommitted.
+2. **CI has never run.** Run the GitHub Actions workflow once (it also builds iOS on
+   macOS) and get it green.
+3. **Supported React Native range is undecided.** The peer range says `>=0.80.0` but
+   only 0.86.2 has been tested. Either test the lower bound or raise the range.
+
+**Resolved since revision 1:**
+
+- Corrected `yarn.lock` committed (verified via the PC's git index).
 
 ## 22. High priority
 
-1. Run the Kotlin tests with Gradle:
-   `cd example/android; .\gradlew :react-native-network-diagnostics:testDebugUnitTest`.
-2. Run the remaining Android manual scenarios, especially:
-   - A3 airplane mode
-   - A2 cellular
-   - A4 Wi-Fi without internet
-   - A9 to A11 error codes on a real device
-   - A5 captive portal
-3. Get CI green once, by pushing to a branch when the maintainer chooses. CI also builds
-   iOS on macOS.
-4. Either build and test against React Native 0.80 (and one version in between), or raise
-   the peer range to what has been tested.
-5. Do one Android **release (R8)** build of the example app and run diagnostics in it.
+No open Android item is high priority any more. Completed in revision 2:
+
+- Gradle Kotlin unit tests: PASS.
+- Android release build: PASS (R8 shrinking not exercised; see Medium).
+- Android cellular (A2), airplane mode (A3), endpoint timeout (A4/A10), DNS failure (A9)
+  and TLS failure (A11) on a physical device: PASS.
+- Android monitoring on a physical device: PASS.
+
+The remaining high-priority work is the blockers above (iOS, CI, React Native range).
 
 ## 23. Medium and low priority
 
 **Medium:**
 
+- Captive portal (A5): run on a real captive-portal network when one is available. It is
+  an optional manual scenario, not a release blocker; the JS logic is unit-tested.
+- Enable `minifyEnabled` in the example's release build once and confirm diagnostics still
+  work, to verify R8 compatibility.
+- Remaining Android scenarios: A6 metered Wi-Fi, A7 Data Saver, A8 slow network, A12 HTTP
+  error, A13 VPN, A14 network switch mid-probe, A15 API 24/25, additional device models.
 - Add Robolectric + MockWebServer tests for `EndpointProber` (no redirect follow, no body
   read, timeout and TLS codes).
 - Surface Android monitoring registration failure to JS instead of only logging it.
-- Document the three accuracy caveats from section 6.
 - Decide on web: either add a `.web.ts` entry that rejects with `DIAGNOSTIC_UNAVAILABLE`,
   or keep "not supported".
 - Hook: avoid a native stop/start when options change while monitoring; consider retrying
@@ -671,33 +726,35 @@ platform is a release blocker for a package that advertises iOS support.
 - Fix the Gradle `propName value` deprecations (`android/build.gradle:39` and the
   example's scaffold files).
 - Remove `react-native.config.js` from `files`.
-- Name the exported constants in API.md.
 - Add an E2E smoke test (Maestro or Detox) for the example screen.
 - Sign commits before the first push if a "Verified" badge matters.
 
 ## 24. Not tested
 
-- iOS: everything (CocoaPods, Xcode build, Swift unit tests, simulator, device, Low Data
-  Mode).
-- Android: Gradle unit tests, release/R8 build, API 24/25 devices, emulator, cellular,
-  airplane mode, captive portal, metered Wi-Fi, Data Saver, VPN, error-code scenarios,
-  network switch mid-probe.
-- Example Android app on any device other than the maintainer's phone (model not
-  recorded).
+- iOS: everything (pod install, Xcode build, example app, Swift unit tests, simulator,
+  physical device, Low Data Mode, captive portal and OS-validation behavior).
+- Android: real captive portal (no captive-portal network available), VPN, metered Wi-Fi,
+  Data Saver / constrained, HTTP error status, slow network, network switch in the
+  middle of an active probe, API 24/25 devices, emulator, R8 shrinking (release build ran
+  with minify off), runtime behavior of the release APK.
+- Example Android app on any device other than the maintainer's phone (model and
+  Android version not recorded).
 - React Native versions other than 0.86.2; Expo development builds; `use_frameworks!`.
 - GitHub Actions CI.
 - Memory and leak profiling (Android Profiler, Xcode Instruments).
 
 ## 25. Recommended next steps
 
-1. On the PC, commit the audit changes and `yarn.lock`:
-   `git add -A && git commit -m "chore: final audit fixes and report"`.
-2. Run the Gradle Kotlin tests and the remaining Android scenarios; fill in
+1. Done in revision 2: audit changes and `yarn.lock` committed; Gradle Kotlin tests,
+   release build and the main Android scenarios run and recorded in
    `docs/MANUAL_TESTING.md`.
-3. Get access to a Mac (or push to a private branch and let CI build iOS). Fix any iOS
+2. Get access to a Mac (or push to a private branch and let CI build iOS). Fix any iOS
    compile errors, run `swift test`, and run the iOS checklist.
+3. Run CI once and get it green.
 4. Decide the supported React Native range and test its lower bound.
-5. Re-run this audit's command list. Publish 0.1.0 only after the blockers are closed.
+5. Optionally: captive portal on a real network, the remaining Android scenarios, and an
+   R8-minified release build.
+6. Re-run this audit's command list. Publish 0.1.0 only after the blockers are closed.
 
 ---
 
@@ -728,5 +785,15 @@ unless noted.
 | 18  | After audit edits: `yarn typecheck`, `yarn lint`, `yarn format`, `yarn test`, `yarn install --immutable`                                                      | All PASS, 156/156                                                                                                       |
 | 19  | Read from the PC: `.git/logs/HEAD`, `COMMIT_EDITMSG`, `app-debug.apk` metadata, Gradle problems report, library manifest merge report, compiled `.class` list | Evidence in sections 2, 10 and 12                                                                                       |
 
-Not run anywhere: Gradle unit tests, Android release build, CocoaPods, Xcode, `swift test`,
-CI.
+**Revision 2 additions:**
+
+| #   | Command / action                                                                                                         | Where                      | Result                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------- | ---------------------------------------------------------------------------------------- |
+| 20  | `.\gradlew :react-native-network-diagnostics:testDebugUnitTest`                                                          | Windows PC, by maintainer  | PASS (`BUILD SUCCESSFUL`, 29 tasks)                                                      |
+| 21  | `.\gradlew :app:assembleRelease`                                                                                         | Windows PC, by maintainer  | PASS (`BUILD SUCCESSFUL`, 112 tasks)                                                     |
+| 22  | Device scenarios A1, A2, A3, A4/A10, A9, A11, monitoring                                                                 | Maintainer's Android phone | PASS (values in `docs/MANUAL_TESTING.md`)                                                |
+| 23  | Copied `.git/index`, `.git/logs/HEAD` from the PC; `GIT_INDEX_FILE=... git ls-files -s` compared with the sandbox commit | Sandbox                    | 121 files, identical blob hashes, including `yarn.lock`                                  |
+| 24  | Listed `example/android/app/build/outputs` on the PC; read `example/android/app/build.gradle`                            | Sandbox (file access)      | `app-release.apk` present; no R8 mapping output; `enableProguardInReleaseBuilds = false` |
+
+Not run anywhere: CocoaPods, Xcode, `swift test`, iOS simulator or device, CI, R8-minified
+build.

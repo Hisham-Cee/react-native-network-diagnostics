@@ -6,9 +6,16 @@ whether a captive portal is in the way, whether the network is metered or in Low
 Mode, and how long DNS, TCP, TLS and a full HTTPS request to **your own backend** take,
 with failures normalized into clear error codes.
 
-> **Status: experimental (0.1.x).** The API may change in minor versions. Android has been
-> built and smoke-tested on one physical device (Wi-Fi diagnostics and monitoring) with
-> React Native 0.86.2. **iOS has not been compiled or run yet.** See
+> **Status: experimental (0.1.x), not yet published to npm.** The API may change in minor
+> versions.
+>
+> - **Android:** built (debug and release) and tested on a physical device with React
+>   Native 0.86.2. Wi-Fi, cellular, offline, endpoint timeout, DNS failure, TLS failure
+>   and network monitoring behave as documented. Kotlin unit tests pass under Gradle.
+>   Captive-portal detection has **not** been tested on a real captive-portal network.
+> - **iOS:** implemented but **not yet built or tested**.
+>
+> Details: [docs/MANUAL_TESTING.md](docs/MANUAL_TESTING.md) and
 > [docs/FINAL_IMPLEMENTATION_AUDIT.md](docs/FINAL_IMPLEMENTATION_AUDIT.md).
 
 ## Why this package exists
@@ -230,6 +237,12 @@ Details: [docs/PLATFORM_DIFFERENCES.md](docs/PLATFORM_DIFFERENCES.md).
 - One sample is noisy. Use `samples: 3` when the number matters; it triples the requests.
 - `httpsMs` includes your server's response time. A slow endpoint looks like a slow network.
 - `dnsMs` may be near zero when the OS resolver cache answers.
+- On Android, `httpsMs` includes any time the request waits in OkHttp's queue (negligible
+  unless many probes run at once).
+- Probes use the package's own HTTP client, not your app's networking stack, so your
+  interceptors, certificate pinning and proxy settings are not exercised.
+- Right after a network switch, Android may briefly report `validated: false` while it
+  re-validates.
 - iOS cannot report OS internet validation, captive portals or VPNs. A probe is the only
   reliable check there.
 - Android Data Saver changes are seen on the next read or network event, not instantly.
@@ -237,7 +250,9 @@ Details: [docs/PLATFORM_DIFFERENCES.md](docs/PLATFORM_DIFFERENCES.md).
   within `timeoutMs` and the result is ignored.
 - Only `https://` endpoints. Plain HTTP is rejected.
 - Requires the New Architecture and React Native 0.80+.
-- Only Android Wi-Fi diagnostics and monitoring have been checked on a device; iOS is unverified. See the manual test matrix.
+- Android has been tested on one physical device only; captive portal, VPN, metered
+  Wi-Fi, Data Saver and API 24/25 are not yet verified. iOS has not been built or tested.
+  See the [manual test matrix](docs/MANUAL_TESTING.md).
 
 ## Privacy
 
@@ -275,9 +290,11 @@ cd example/android && ./gradlew :react-native-network-diagnostics:testDebugUnitT
 cd ios && swift test                                                                 # Swift (macOS)
 ```
 
+The Swift tests (`swift test`) have not been run yet; they need macOS.
+
 Manual device scenarios (Wi-Fi, cellular, airplane mode, captive portal, Low Data Mode,
-Data Saver, slow network, unreachable backend, timeout):
-[docs/MANUAL_TESTING.md](docs/MANUAL_TESTING.md).
+Data Saver, slow network, unreachable backend, timeout) and their current PASS / NOT RUN
+status: [docs/MANUAL_TESTING.md](docs/MANUAL_TESTING.md).
 
 The example app in `example/` shows a diagnostics screen:
 

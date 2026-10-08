@@ -8,6 +8,7 @@ Everything below is exported from `react-native-network-diagnostics`. The API is
 - [addNetworkStateListener](#addnetworkstatelistenerlistener)
 - [useNetworkDiagnostics](#usenetworkdiagnosticsoptions)
 - [classifyNetworkQuality](#classifynetworkqualityinput-thresholds)
+- [Constants and helpers](#constants-and-helpers)
 - [Types](#types)
 - [Error codes](#error-codes)
 - [Quality classification](#quality-classification)
@@ -132,6 +133,20 @@ function classifyNetworkQuality(
 Pure function, exported so that apps can classify their own measurements or test their
 UI. `classifyLatency(ms, thresholds?)` and `DEFAULT_QUALITY_THRESHOLDS` are exported too.
 
+## Constants and helpers
+
+| Export                                | Value / signature                                          | Meaning                                                                |
+| ------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `DEFAULT_TIMEOUT_MS`                  | `5000`                                                     | Default `timeoutMs` per request                                        |
+| `MIN_TIMEOUT_MS`                      | `500`                                                      | Smallest accepted `timeoutMs`                                          |
+| `MAX_TIMEOUT_MS`                      | `60000`                                                    | Largest accepted `timeoutMs`                                           |
+| `MAX_SAMPLES`                         | `5`                                                        | Largest accepted `samples`                                             |
+| `DEFAULT_QUALITY_THRESHOLDS`          | `{ excellentMs: 150, goodMs: 400, fairMs: 1000 }` (frozen) | Default latency buckets                                                |
+| `NETWORK_DIAGNOSTIC_ERROR_CODES`      | readonly array of the 8 codes                              | See [Error codes](#error-codes)                                        |
+| `NetworkDiagnosticsError`             | `class extends Error { code }`                             | Thrown (as a rejection) for invalid options or a missing native module |
+| `isNetworkDiagnosticsError(value)`    | `(value: unknown) => value is NetworkDiagnosticsError`     | Type guard                                                             |
+| `isNetworkDiagnosticErrorCode(value)` | `(value: unknown) => value is NetworkDiagnosticErrorCode`  | Type guard                                                             |
+
 ## Types
 
 ```ts
@@ -190,6 +205,19 @@ interface LatencyMetrics {
   measured, not adjusted.
 - All latency values are medians across successful samples, rounded to whole
   milliseconds.
+
+### Measurement caveats
+
+- On Android, `httpsMs` starts at OkHttp's `callStart`, which fires when the request is
+  queued. Any time spent waiting in OkHttp's dispatcher queue is therefore included. This
+  is negligible unless many probes run at once.
+- Probes use the package's own `OkHttpClient` (Android) and `URLSession` (iOS), not your
+  app's networking stack. Your app's interceptors, certificate pinning and custom proxy
+  settings are not exercised. The Android network security config and iOS App Transport
+  Security still apply.
+- Right after a network switch, Android can briefly report `internet.validated: false`
+  while it re-validates the new network. Without an endpoint, a monitored result may
+  therefore show `poor` for a moment.
 
 ## Error codes
 
