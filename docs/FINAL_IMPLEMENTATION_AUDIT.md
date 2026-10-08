@@ -404,7 +404,7 @@ are covered by unit tests only. The iOS mapping has tests that have never run.
 | Android release build                      | `.\gradlew :app:assembleRelease` (in `example/android`)                                | Windows PC, JDK 17 (run by maintainer, revision 2) | **PASS**                          | `BUILD SUCCESSFUL`, 112 actionable tasks (97 executed, 15 up-to-date); `app-release.apk` (52.5 MB, 2026-10-07 16:04 IST) on disk. R8 shrinking **not exercised**: `enableProguardInReleaseBuilds = false` in the example, and no R8 mapping output exists. Release APK runtime not recorded. |
 | iOS pod install / build                    | `pod install`, `yarn example ios`                                                      | -                                                  | **NOT RUN: requires macOS/Xcode** |                                                                                                                                                                                                                                                                                              |
 | Swift unit tests                           | `cd ios && swift test`                                                                 | -                                                  | **NOT RUN: requires macOS/Xcode** |                                                                                                                                                                                                                                                                                              |
-| CI workflow                                | `.github/workflows/ci.yml`                                                             | -                                                  | **NOT RUN**                       | Never pushed. The lockfile cause of a certain failure is fixed and committed.                                                                                                                                                                                                                |
+| CI workflow                                | `.github/workflows/ci.yml`                                                             | -                                                  | **NOT RUN**                       | Awaiting first run. It triggers only on push or pull request to `main` (or a manual run once it is on `main`), so a push to another branch alone does not run it. The lockfile cause of a certain failure is fixed and committed.                                                            |
 
 ---
 
@@ -748,7 +748,7 @@ The remaining high-priority work is the blockers above (iOS, CI, React Native ra
 1. Done in revision 2: audit changes and `yarn.lock` committed; Gradle Kotlin tests,
    release build and the main Android scenarios run and recorded in
    `docs/MANUAL_TESTING.md`.
-2. Get access to a Mac (or push to a private branch and let CI build iOS). Fix any iOS
+2. Get access to a Mac (or open a pull request to `main` and let CI build iOS). Fix any iOS
    compile errors, run `swift test`, and run the iOS checklist.
 3. Run CI once and get it green.
 4. Decide the supported React Native range and test its lower bound.

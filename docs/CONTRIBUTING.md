@@ -39,9 +39,10 @@ JavaScript changes reload in the example app. Native changes need a rebuild.
 | `cd ios && swift test`                                                                | Swift unit tests (macOS)                                                         |
 | `npm pack --dry-run`                                                                  | Shows what would be published                                                    |
 
-The CI workflow (`.github/workflows/ci.yml`) is configured to run these checks plus full
-example builds for Android and iOS. It has not been run yet, so treat it as unproven until
-the first green run.
+The CI workflow (`.github/workflows/ci.yml`) runs these checks plus full example builds
+for Android and iOS. The iOS jobs (Swift unit tests and the example app build for the iOS
+Simulator) run on a GitHub-hosted macOS runner. The workflow has been added but is
+awaiting its first run, so treat it as unproven until the first green run.
 
 ## Code guidelines
 

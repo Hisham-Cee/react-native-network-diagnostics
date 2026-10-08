@@ -73,8 +73,11 @@ jobs:
           cd example/android
           ./gradlew :react-native-network-diagnostics:testDebugUnitTest --no-daemon --console=plain
 
+  # macos-26 (Apple silicon) is what macos-latest points to today. Pinned so a future
+  # macos-latest switch cannot change the toolchain silently. React Native 0.86 needs
+  # Xcode >= 16.1; this image ships Xcode 26.x.
   test-ios-native:
-    runs-on: macos-latest
+    runs-on: macos-26
 
     env:
       XCODE_VERSION: 26
@@ -114,6 +117,10 @@ jobs:
 
       - name: Build package
         run: yarn prepare
+
+      # Lists exactly what `npm publish` would upload. Nothing is published.
+      - name: Check package contents
+        run: npm pack --dry-run
 
   build-android:
     runs-on: ubuntu-latest
@@ -175,7 +182,7 @@ jobs:
           yarn turbo run build:android --cache-dir="${{ env.TURBO_CACHE_DIR }}"
 
   build-ios:
-    runs-on: macos-latest
+    runs-on: macos-26
 
     env:
       XCODE_VERSION: 26
