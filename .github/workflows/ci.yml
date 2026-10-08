@@ -9,6 +9,8 @@ on:
   merge_group:
     types:
       - checks_requested
+  # Allows running CI by hand from the Actions tab (for example to re-check iOS).
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -74,10 +76,26 @@ jobs:
   test-ios-native:
     runs-on: macos-latest
 
+    env:
+      XCODE_VERSION: 26
+
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
+      # Same Xcode as build-ios, so the Swift toolchain matches the example build.
+      - name: Use appropriate Xcode version
+        uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd # v1.6.0
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      # Builds and runs the XCTest suite for the pure Swift logic in ios/Core
+      # (network state mapping, error mapping, timings, endpoint validation).
       - name: Swift unit tests
         run: |
           cd ios
@@ -195,7 +213,7 @@ jobs:
           xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Install cocoapods
-        if: env.turbo_cache_hit != 1 && steps.cocoapods-cache.outputs.cache-hit != 'true'
+        if: env.turbo_cache_hit != 1
         run: |
           cd example
           bundle install
