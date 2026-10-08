@@ -41,8 +41,9 @@ JavaScript changes reload in the example app. Native changes need a rebuild.
 
 The CI workflow (`.github/workflows/ci.yml`) runs these checks plus full example builds
 for Android and iOS. The iOS jobs (Swift unit tests and the example app build for the iOS
-Simulator) run on a GitHub-hosted macOS runner. The workflow has been added but is
-awaiting its first run, so treat it as unproven until the first green run.
+Simulator) run on a GitHub-hosted macOS runner. The first run on pull request #1
+(2026-10-08) passed all 7 jobs. CI does not launch the app, so iOS runtime behavior still
+needs the manual checks in [MANUAL_TESTING.md](MANUAL_TESTING.md).
 
 ## Code guidelines
 

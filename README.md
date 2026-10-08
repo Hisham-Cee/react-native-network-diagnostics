@@ -13,7 +13,9 @@ with failures normalized into clear error codes.
 >   Native 0.86.2. Wi-Fi, cellular, offline, endpoint timeout, DNS failure, TLS failure
 >   and network monitoring behave as documented. Kotlin unit tests pass under Gradle.
 >   Captive-portal detection has **not** been tested on a real captive-portal network.
-> - **iOS:** implemented but **not yet built or tested**.
+> - **iOS:** compiles, and its Swift unit tests pass, in GitHub Actions CI on macOS
+>   (Xcode 26, example app built for the iOS Simulator). It has **not** been run on a
+>   simulator or device, so iOS runtime behavior is unverified.
 >
 > Details: [docs/MANUAL_TESTING.md](docs/MANUAL_TESTING.md) and
 > [docs/FINAL_IMPLEMENTATION_AUDIT.md](docs/FINAL_IMPLEMENTATION_AUDIT.md).
@@ -251,7 +253,8 @@ Details: [docs/PLATFORM_DIFFERENCES.md](docs/PLATFORM_DIFFERENCES.md).
 - Only `https://` endpoints. Plain HTTP is rejected.
 - Requires the New Architecture and React Native 0.80+.
 - Android has been tested on one physical device only; captive portal, VPN, metered
-  Wi-Fi, Data Saver and API 24/25 are not yet verified. iOS has not been built or tested.
+  Wi-Fi, Data Saver and API 24/25 are not yet verified. iOS compiles and its Swift unit
+  tests pass in CI, but it has not been run on a simulator or device.
   See the [manual test matrix](docs/MANUAL_TESTING.md).
 
 ## Privacy
